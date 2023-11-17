@@ -1,69 +1,56 @@
-#include <check.h>
 #include "s21_decimal.h"
 
-START_TEST(test_s21_from_decimal_to_int_valid)
-{
-    s21_decimal decimal;
-    int result;
-    int expected = 123; // Expected integer value
-
-    // Initialize the decimal structure with a valid integer value and no fractional part
-    decimal.intPart = 123;
-    decimal.fractPart = 0;
-    decimal.scale = 0;
-    decimal.bits[0] = 0;
-    decimal.bits[1] = 0;
-    decimal.bits[2] = 0;
-    decimal.bits[3] = 0;
-
-    // Call the conversion function
-    int rc = s21_from_decimal_to_int(decimal, &result);
-
-    // Check the return code and the result
-    ck_assert_int_eq(rc, OK);
-    ck_assert_int_eq(result, expected);
+START_TEST(s21_from_decimal_to_int_1) {
+  int src = 0;
+  int temp = 0;
+  int return_value = 0;
+  s21_decimal value_1 = {{0, 0, 1, 0}};
+  s21_from_decimal_to_int(value_1, &temp);
+  return_value = (src == temp);
+  ck_assert_int_eq(return_value, 1);
 }
 END_TEST
 
-START_TEST(test_s21_from_decimal_to_int_with_fraction)
-{
-    s21_decimal decimal;
-    int result;
-
-    // Initialize the decimal structure with a fractional part
-    decimal.intPart = 123;
-    decimal.fractPart = 456;
-    decimal.scale = 3; // Indicate that there is a fractional part
-    decimal.bits[0] = 0;
-    decimal.bits[1] = 0;
-    decimal.bits[2] = 0;
-    decimal.bits[3] = 0;
-
-    // Call the conversion function
-    int rc = s21_from_decimal_to_int(decimal, &result);
-
-    // Check the return code (should be NUM_TOO_SMALL) and the result (undefined)
-    ck_assert_int_eq(rc, NUM_TOO_SMALL);
+START_TEST(s21_from_decimal_to_int_2) {
+  int src = 0;
+  int temp = 100;
+  int return_value = 0;
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_from_decimal_to_int(value_1, &temp);
+  return_value = (src == temp);
+  ck_assert_int_eq(return_value, 1);
 }
 END_TEST
 
-Suite *s21_decimal_suite(void)
-{
-    Suite *suite = suite_create("s21_decimal");
-    TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core, test_s21_from_decimal_to_int_valid);
-    tcase_add_test(tc_core, test_s21_from_decimal_to_int_with_fraction);
-    suite_add_tcase(suite, tc_core);
-    return suite;
+START_TEST(s21_from_decimal_to_int_3) {
+  int src = 133;
+  int temp = 0;
+  int return_value = 0;
+  s21_decimal value_1 = {{0x85, 0, 0, 0}};
+  s21_from_decimal_to_int(value_1, &temp);
+  return_value = (src == temp);
+  ck_assert_int_eq(return_value, 1);
 }
+END_TEST
 
-int main(void)
-{
-    int number_failed;
-    Suite *suite = s21_decimal_suite();
-    SRunner *runner = srunner_create(suite);
-    srunner_run_all(runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(runner);
-    srunner_free(runner);
-    return (number_failed == 0) ? CK_PASS : CK_FAILURE;
+int main(void) {
+  Suite *s;
+  TCase *tc;
+  SRunner *sr;
+
+  s = suite_create("s21_decimal");
+  tc = tcase_create("convertation");
+
+  tcase_add_test(tc, s21_from_decimal_to_int_1);
+  tcase_add_test(tc, s21_from_decimal_to_int_2);
+  tcase_add_test(tc, s21_from_decimal_to_int_3);
+
+  suite_add_tcase(s, tc);
+  sr = srunner_create(s);
+
+  srunner_run_all(sr, CK_VERBOSE);
+  int failed = srunner_ntests_failed(sr);
+  srunner_free(sr);
+
+  return (failed == 0) ? 0 : 1;
 }

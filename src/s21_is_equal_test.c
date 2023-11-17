@@ -1,42 +1,44 @@
-#include <check.h>
 #include "s21_decimal.h"
 
-START_TEST(test_is_equal) {
-  s21_decimal num1, num2;
-  int rc;
+START_TEST(s21_is_equal_1) {
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_decimal value_2 = {{0, 0, 0, 0}};
+  int return_value = s21_is_equal(value_1, value_2);
+  ck_assert_int_eq(return_value, 1);
+}
+END_TEST
 
-  // Тест двух равных чисел
-  num1.intPart = 123;
-  num1.fractPart = 456;
-  num2.intPart = 123;
-  num2.fractPart = 456;
-  rc = s21_is_equal(num1, num2);
-  ck_assert_int_eq(rc, TRUE);
+START_TEST(s21_is_equal_2) {
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_decimal value_2 = {{0, 0, 1, 0}};
+  int return_value = s21_is_equal(value_1, value_2);
+  ck_assert_int_eq(return_value, 0);
+}
+END_TEST
 
-  // Тест различных целых частей
-  num1.intPart = 789;
-  num1.fractPart = 123;
-  num2.intPart = 456;
-  num2.fractPart = 123;
-  rc = s21_is_equal(num1, num2);
-  ck_assert_int_eq(rc, FALSE);
+START_TEST(s21_is_equal_3) {
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_decimal value_2 = {{0, 0, 0, 80000000}};
+  int return_value = s21_is_equal(value_1, value_2);
+  ck_assert_int_eq(return_value, 1);
+}
+END_TEST
 
-  // Тест различных дробных частей
-  num1.intPart = 123;
-  num1.fractPart = 789;
-  num2.intPart = 123;
-  num2.fractPart = 456;
-  rc = s21_is_equal(num1, num2);
-  ck_assert_int_eq(rc, FALSE);
+START_TEST(s21_is_equal_4) {
+  s21_decimal value_1 = {{2, 0, 0, 0}};
+  s21_decimal value_2 = {{20, 0, 0, 0x10000}};
+  int return_value = s21_is_equal(value_1, value_2);
+  ck_assert_int_eq(return_value, FALSE);
+}
+END_TEST
 
-  // Тест различных целых и дробных частей
-  num1.intPart = 789;
-  num1.fractPart = 456;
-  num2.intPart = 123;
-  num2.fractPart = 123;
-  rc = s21_is_equal(num1, num2);
-  ck_assert_int_eq(rc, FALSE);
-} END_TEST
+START_TEST(s21_is_equal_5) {
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_decimal value_2 = {{0, 0, 0, 0x80000000}};
+  int return_value = s21_is_equal(value_1, value_2);
+  ck_assert_int_eq(return_value, 1);
+}
+END_TEST
 
 int main(void) {
   Suite *s;
@@ -46,12 +48,16 @@ int main(void) {
   s = suite_create("s21_decimal");
   tc = tcase_create("comparison");
 
-  tcase_add_test(tc, test_is_equal);
+  tcase_add_test(tc, s21_is_equal_1);
+  tcase_add_test(tc, s21_is_equal_2);
+  tcase_add_test(tc, s21_is_equal_3);
+  tcase_add_test(tc, s21_is_equal_4);
+  tcase_add_test(tc, s21_is_equal_5);
 
   suite_add_tcase(s, tc);
   sr = srunner_create(s);
 
-  srunner_run_all(sr, CK_NORMAL);
+  srunner_run_all(sr, CK_VERBOSE);
   int failed = srunner_ntests_failed(sr);
   srunner_free(sr);
 

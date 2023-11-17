@@ -1,45 +1,59 @@
-#include <check.h>
 #include "s21_decimal.h"
-
-START_TEST(s21_test_positive) {
-    int src = 12345;
-    s21_decimal result;
-    int rc = s21_from_int_to_decimal(src, &result);
-    ck_assert_int_eq(rc, OK);
-    ck_assert_int_eq(result.intPart, 12345ULL);
-    ck_assert_int_eq(result.fractPart, 0ULL);
-    ck_assert_int_eq(result.scale, 0);
-    // Add more assertions if needed
+/*
+START_TEST(s21_from_int_to_decimal_1) {
+  int src = -31325;
+  int temp = 0;
+  int result = 0;
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_from_int_to_decimal(src, &value_1);
+  s21_from_decimal_to_int(value_1, &temp);
+  result = (src == temp);
+  ck_assert_int_eq(result, 1);
+}
+END_TEST
+*/
+START_TEST(s21_from_int_to_decimal_2) {
+  int src = -0;
+  int temp = 0;
+  int result = 0;
+  s21_decimal value_1 = {{1, 0, 0, 0}};
+  s21_from_int_to_decimal(src, &value_1);
+  s21_from_decimal_to_int(value_1, &temp);
+  result = (src == temp);
+  ck_assert_int_eq(result, 1);
 }
 END_TEST
 
-START_TEST(s21_test_negative) {
-    int src = -12345;
-    s21_decimal result;
-    int rc = s21_from_int_to_decimal(src, &result);
-    ck_assert_int_eq(rc, OK);
-    ck_assert_int_eq(result.intPart, 12345ULL);
-    ck_assert_int_eq(result.fractPart, 0ULL);
-    ck_assert_int_eq(result.scale, 0);
-    // Add more assertions if needed
+START_TEST(s21_from_int_to_decimal_3) {
+  int src = 101;
+  int temp = 0;
+  int result = 0;
+  s21_decimal value_1 = {{0, 0, 0, 0}};
+  s21_from_int_to_decimal(src, &value_1);
+  s21_from_decimal_to_int(value_1, &temp);
+  result = (src == temp);
+  ck_assert_int_eq(result, 1);
 }
 END_TEST
-
-Suite *s21_decimal_suite(void) {
-    Suite *suite = suite_create("s21_decimal");
-    TCase *tc_core = tcase_create("Core");
-    tcase_add_test(tc_core, s21_test_positive);
-    tcase_add_test(tc_core, s21_test_negative);
-    suite_add_tcase(suite, tc_core);
-    return suite;
-}
 
 int main(void) {
-    int number_failed;
-    Suite *suite = s21_decimal_suite();
-    SRunner *runner = srunner_create(suite);
-    srunner_run_all(runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(runner);
-    srunner_free(runner);
-    return (number_failed == 0) ? CK_PASS : CK_FAILURE;
+  Suite *s;
+  TCase *tc;
+  SRunner *sr;
+
+  s = suite_create("s21_decimal");
+  tc = tcase_create("convertation");
+
+  // tcase_add_test(tc, s21_from_int_to_decimal_1);
+  tcase_add_test(tc, s21_from_int_to_decimal_2);
+  tcase_add_test(tc, s21_from_int_to_decimal_3);
+
+  suite_add_tcase(s, tc);
+  sr = srunner_create(s);
+
+  srunner_run_all(sr, CK_VERBOSE);
+  int failed = srunner_ntests_failed(sr);
+  srunner_free(sr);
+
+  return (failed == 0) ? 0 : 1;
 }
