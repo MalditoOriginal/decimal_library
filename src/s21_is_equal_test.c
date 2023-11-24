@@ -1,3 +1,5 @@
+#include <check.h>
+
 #include "s21_decimal.h"
 
 START_TEST(s21_is_equal_1) {
@@ -28,7 +30,7 @@ START_TEST(s21_is_equal_4) {
   s21_decimal value_1 = {{2, 0, 0, 0}};
   s21_decimal value_2 = {{20, 0, 0, 0x10000}};
   int return_value = s21_is_equal(value_1, value_2);
-  ck_assert_int_eq(return_value, FALSE);
+  ck_assert_int_eq(return_value, 1);
 }
 END_TEST
 

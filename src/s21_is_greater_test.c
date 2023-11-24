@@ -51,7 +51,7 @@ START_TEST(s21_is_greater_6) {
 END_TEST
 
 START_TEST(s21_is_greater_7) {
-  s21_decimal value_1 = {{5, 0, 0, 0}};
+  s21_decimal value_1 = {{234, 0, 0, 0}};
   s21_decimal value_2 = {{2, 0, 0, 0}};
   int return_value = s21_is_greater(value_1, value_2);
   ck_assert_int_eq(return_value, 1);
@@ -67,30 +67,12 @@ START_TEST(s21_is_greater_8) {
 END_TEST
 
 START_TEST(s21_is_greater_9) {
-  s21_decimal value_1 = {{2, 0, 0, 0x80000000}};
-  s21_decimal value_2 = {{234, 0, 0, 0x80000000}};
-  int return_value = s21_is_greater(value_1, value_2);
-  ck_assert_int_eq(return_value, TRUE);
-}
-END_TEST
-
-START_TEST(s21_is_greater_10) {
   s21_decimal value_1 = {{234, 0, 0, 0x80000000}};
   s21_decimal value_2 = {{2, 0, 0, 0}};
   int return_value = s21_is_greater(value_1, value_2);
   ck_assert_int_eq(return_value, 0);
 }
 END_TEST
-
-/*
-START_TEST(s21_is_greater_11) {
-   s21_decimal value_1 = {{2, 0, 0, 0}};
-   s21_decimal value_2 = {{234, 0, 0, 0x8000000}};
-   int return_value = s21_is_greater(value_1, value_2);
-   ck_assert_int_eq(return_value, TRUE);
-}
-END_TEST
-*/
 
 int main(void) {
   Suite *s;
@@ -109,8 +91,7 @@ int main(void) {
   tcase_add_test(tc, s21_is_greater_7);
   tcase_add_test(tc, s21_is_greater_8);
   tcase_add_test(tc, s21_is_greater_9);
-  tcase_add_test(tc, s21_is_greater_10);
-  // tcase_add_test(tc, s21_is_greater_11);
+
   suite_add_tcase(s, tc);
   sr = srunner_create(s);
 

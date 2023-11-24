@@ -1,5 +1,7 @@
+#include <check.h>
+
 #include "s21_decimal.h"
-/*
+
 START_TEST(s21_round_1) {
   s21_decimal value_2 = {0};
   s21_decimal result = {0};
@@ -45,7 +47,7 @@ START_TEST(s21_round_5) {
   ck_assert_int_eq(return_value, 0);
 }
 END_TEST
-*/
+
 int main(void) {
   Suite *s;
   TCase *tc;
@@ -53,13 +55,13 @@ int main(void) {
 
   s = suite_create("s21_decimal");
   tc = tcase_create("another");
-  /*
+
   tcase_add_test(tc, s21_round_1);
   tcase_add_test(tc, s21_round_2);
   tcase_add_test(tc, s21_round_3);
   tcase_add_test(tc, s21_round_4);
   tcase_add_test(tc, s21_round_5);
-*/
+
   suite_add_tcase(s, tc);
   sr = srunner_create(s);
 

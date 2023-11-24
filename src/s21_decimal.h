@@ -1,49 +1,50 @@
 #ifndef S21_DECIMAL_H
 #define S21_DECIMAL_H
 
-#include <check.h>
 #include <limits.h>
 #include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define LARGE_NUM 79228162514264337593543950335.0f
-#define SMALL_NUM 1e-28
-#define S21_SIGN_DIG 1e7f
 #define SIGN_MASK 0x80000000
+#define CONVERTING_ERROR 1
 
-enum states {
-  FALSE = 0,
-  OK = 0,
-  CALC_ERR = 1,
-  TRUE = 1,
-  CONV_ERR = 1,
-  NUM_TOO_LARGE = 1,
-  NUM_TOO_SMALL,
-  DIV_BY_ZERO,
-};
+enum status { SUCCESS = 0, FALSE = 0, TRUE };
+enum returns { OK, INF, N_INF, N_NAN };
 
 typedef struct {
   int bits[4];
-  int scale;
 } s21_decimal;
 
-bool get_sign(s21_decimal value);
-void clear_bits(s21_decimal *result);
-int get_scale(const s21_decimal *value);
-void set_sign(s21_decimal *result, int sign);
-void set_scale(s21_decimal *result, int scale);
-void div_by_ten(s21_decimal *value);
-void bit_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
-int get_bit(s21_decimal *value, int bit_index);
-int get_sign_bit(s21_decimal value);
-void scale_equalization(s21_decimal *value_1, s21_decimal *value_2);
+typedef union {
+  unsigned int unsign_int;
+  float float_pt;
+} UnFloatUnion;
+
+int get_bit(s21_decimal num, int bit);
+void set_bit(s21_decimal *num, int bit, int value);
+int last_bit(s21_decimal number);
+int offset_left(s21_decimal *varPtr, int value_offset);
+void set_sign(s21_decimal *num, int sign);
+int get_sign(s21_decimal num);
+int get_scale(const s21_decimal *num);
+void set_scale(s21_decimal *num, int scale);
+void clear_bits(s21_decimal *num);
+int bit_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
+int bit_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
+int bit_mul(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);
+void bit_div(s21_decimal value_1, s21_decimal value_2, s21_decimal *result,
+             s21_decimal *tmp);
+void scale_equal(s21_decimal *value_1, s21_decimal *value_2);
+int mod_comp(s21_decimal value_1, s21_decimal value_2);
 int is_equal_without_sign(s21_decimal value_1, s21_decimal value_2);
-int less_without_mod(const s21_decimal *value_1, const s21_decimal *value_2);
+void mul_by_ten(s21_decimal *num);
+void div_by_ten(s21_decimal *num);
 int get_float_exp(float *src);
+int get_float_sign(float src);
+int result_sign(s21_decimal value_1, s21_decimal value_2);
+void bits_copy(s21_decimal src, s21_decimal *dest);
 
 // Arithmetic Operators
 int s21_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result);

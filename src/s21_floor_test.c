@@ -1,3 +1,5 @@
+#include <check.h>
+
 #include "s21_decimal.h"
 
 START_TEST(s21_floor_1) {

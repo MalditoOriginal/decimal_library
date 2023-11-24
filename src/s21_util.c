@@ -1,172 +1,188 @@
 #include "s21_decimal.h"
 
-/* Returns the sign of the 'value' */
-bool get_sign(s21_decimal value) {
-  // Check the sign bit (most significant bit of the most significant word).
-  return (value.bits[3] & SIGN_MASK) != 0;
-}
-
-/* Clears all bits in the 'result' */
-void clear_bits(s21_decimal *result) {
-  if (result != NULL) {
-    for (int i = 0; i < 3; i++) {
-      result->bits[i] = 0;
-    }
-  }
-}
-
-/* Returns the scale of the 'value' */
-int get_scale(const s21_decimal *value) {
-  if (value != NULL) {
-    return value->scale;
-  }
-  return 0;  // Default value when value is NULL
-}
-
-int get_float_exp(float *src) {
-  int exp = ((*(int *)src & ~SIGN_MASK) >> 23) - 127;
-  return exp;
-}
-
-/* Sets the sign of 'result' to the specified 'sign' */
-void set_sign(s21_decimal *result, int sign) {
-  if (result != NULL) {
-    if (sign < 0) {
-      result->bits[3] |= 0x80000000;  // Set the sign bit to 1 for negative
-    } else {
-      result->bits[3] &= 0x7FFFFFFF;  // Set the sign bit to 0 for positive
-    }
-  }
-}
-
-/* Sets the scale of 'result' to the specified 'scale' */
-void set_scale(s21_decimal *result, int scale) {
-  if (result != NULL) {
-    result->scale = scale;
-  }
-}
-
-/* Divides 'value' by 10 */
-void div_by_ten(s21_decimal *value) {
-  if (value != NULL) {
-    int carry = 0;
-    for (int i = 0; i < 3; i++) {
-      int temp = (value->bits[i] & 0x0FFFFFF) + (carry << 4);
-      value->bits[i] = temp / 10;
-      carry = temp % 10;
-    }
-    value->scale--;
-  }
-}
-
-/* Adds two 's21_decimal' values and stores the result in antoher 's21_decimal'
- */
-void bit_add(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
-  // Initialize carry to 0.
-  int carry = 0;
-
-  for (int i = 0; i < 3; i++) {
-    // Add corresponding bits from both values and the previous carry.
-    int sum = value_1.bits[i] + value_2.bits[i] + carry;
-
-    // Update the result and calculate the carry for the next iteration.
-    result->bits[i] = sum % 1000000;  // Keep only the lower 6 digits.
-    carry = sum / 1000000;            // Carry is the upper part of the sum.
-  }
-
-  // If there's still a carry after the loop, set it in the highest bit.
-  if (carry != 0) {
-    result->bits[3] |= 0x8000000;  // Set the sign bit to 1 for the negarive.
-  } else {
-    result->bits[3] &= 0x7FFFFFF;  // Set the sign bit to 0 for the positive.
-  }
-}
-
-/* Extracts the value of a specific bit from an integer. */
-int get_bit(s21_decimal *value, int bit_index) {
-  if (bit_index < 0 || bit_index >= 96) {
+int get_bit(s21_decimal num, int bit) {
+  if (bit < 0 || bit >= 128) {
+    // Invalid bit position
     return 0;
   }
 
-  int word_index = bit_index / 32;
-  int bit_offset = bit_index % 32;
-
-  return (value->bits[word_index] >> bit_offset) & 1;
+  unsigned int mask = 1u << (bit % 32);
+  return (num.bits[bit / 32] & mask) != 0;
 }
 
-// Assuming that the sign bit is in the most significant bit (bit 31)
-int get_sign_bit(s21_decimal value) { return (value.bits[3] >> 31) & 1; }
-
-void mul_by_ten(s21_decimal *value) {
-  int carry = 0;
-  for (int i = 0; i < 3; i++) {
-    int new_word = (value->bits[i] * 10) + carry;
-    value->bits[i] = new_word & 0xFFFFFFFF;  // Ensure 32-bit word
-    carry = new_word >> 31;                  // Right-shift by 31 bits
+void set_bit(s21_decimal *num, int bit, int value) {
+  if (bit < 0 || bit >= 128) {
+    // Invalid bit position
+    return;
   }
 
-  // Handle any remaining carry
-  value->bits[3] = (value->bits[3] * 10) + carry;
+  unsigned int mask = 1u << (bit % 32);
+  int index = bit / 32;
+
+  if (value == TRUE) {
+    num->bits[index] |= mask;
+  } else if (value == FALSE) {
+    num->bits[index] &= ~mask;
+  }
 }
 
-// Define the scale_equalization function
-void scale_equalization(s21_decimal *value_1, s21_decimal *value_2) {
+int last_bit(s21_decimal number) {
+  for (int last_bit = 95; last_bit >= 0; last_bit--) {
+    if (get_bit(number, last_bit) != 0) {
+      return last_bit;
+    }
+  }
+  return -1;  // Indicates no set bit found
+}
+
+int offset_left(s21_decimal *num, int value_offset) {
+  int lastbit = last_bit(*num);
+
+  if (lastbit + value_offset > 95) {
+    return INF;
+  }
+
+  for (int i = 0; i < value_offset; i++) {
+    int value_31bit = get_bit(*num, 31);
+    int value_63bit = get_bit(*num, 63);
+
+    for (int j = 0; j < 3; j++) num->bits[j] <<= 1;
+
+    if (value_31bit) set_bit(num, 32, 1);
+    if (value_63bit) set_bit(num, 64, 1);
+  }
+
+  return OK;
+}
+
+void set_sign(s21_decimal *num, int sign) {
+  if (sign != 0) {
+    num->bits[3] |= 1u << 31;
+  } else {
+    num->bits[3] &= ~(1u << 31);
+  }
+}
+
+int get_scale(const s21_decimal *num) {
+  char scale = num->bits[3] >> 16;
+  return scale;
+}
+
+void set_scale(s21_decimal *num, int scale) {
+  // Clear the existing scale bits (bits 17 to 24) in num->bits[3]
+  num->bits[3] &= ~(0xFFu << 16);
+
+  // Set the new scale bits based on the provided scale
+  num->bits[3] |= (scale & 0xFF) << 16;
+}
+
+void clear_bits(s21_decimal *num) {
+  if (num != NULL) {
+    memset(num->bits, 0, sizeof(num->bits));
+  }
+}
+
+int get_sign(s21_decimal num) { return (num.bits[3] >> 31) & 1; }
+
+void mul_by_ten(s21_decimal *num) {
+  s21_decimal ten = {{10, 0, 0, 0}};
+  bit_mul(*num, ten, num);
+}
+
+void div_by_ten(s21_decimal *num) {
+  s21_decimal empty;
+  s21_decimal ten = {{10, 0, 0, 0}};
+  bit_div(*num, ten, num, &empty);
+}
+
+int get_float_sign(float src) { return src < 0; }
+
+int get_float_exp(float *src) { return ((*(int *)src) >> 23) - 127; }
+
+int is_equal_without_sign(s21_decimal value_1, s21_decimal value_2) {
+  return (value_1.bits[2] == value_2.bits[2] &&
+          value_1.bits[1] == value_2.bits[1] &&
+          value_1.bits[0] == value_2.bits[0]);
+}
+
+int mod_comp(s21_decimal value_1, s21_decimal value_2) {
+  int out;
+  if (value_1.bits[2] < value_2.bits[2]) {
+    out = TRUE;
+  } else if (value_1.bits[2] > value_2.bits[2]) {
+    out = FALSE;
+  } else {
+    if (value_1.bits[1] < value_2.bits[1]) {
+      out = TRUE;
+    } else if (value_1.bits[1] > value_2.bits[1]) {
+      out = FALSE;
+    } else {
+      if (value_1.bits[0] < value_2.bits[0]) {
+        out = TRUE;
+      } else if (value_1.bits[0] > value_2.bits[0]) {
+        out = FALSE;
+      } else {
+        out = FALSE;
+      }
+    }
+  }
+  return out;
+}
+
+void scale_equal(s21_decimal *value_1, s21_decimal *value_2) {
+  // Check if the scale of value_1 is less than the scale of value_2
   if (get_scale(value_1) < get_scale(value_2)) {
     int difference = get_scale(value_2) - get_scale(value_1);
-    if (get_bit(value_2, 93) == 0 && get_bit(value_2, 94) == 0 &&
-        get_bit(value_2, 95) == 0) {
+
+    // Check if the higher bits of value_2 are zero
+    if (get_bit(*value_2, 93) == 0 && get_bit(*value_2, 94) == 0 &&
+        get_bit(*value_2, 95) == 0) {
+      // Multiply value_1 by 10 'difference' times
       for (int i = 0; i < difference; i++) {
         mul_by_ten(value_1);
       }
+      // Set the scale of value_1 to the scale of value_2
       set_scale(value_1, get_scale(value_2));
     } else {
+      // Divide value_2 by 10 'difference' times
       for (int i = 0; i < difference; i++) {
         div_by_ten(value_2);
       }
+      // Set the scale of value_2 to the scale of value_1
       set_scale(value_2, get_scale(value_1));
     }
   } else {
+    // If the scale of value_2 is less than the scale of value_1
     int difference = get_scale(value_1) - get_scale(value_2);
-    if (get_bit(value_1, 93) == 0 && get_bit(value_1, 94) == 0 &&
-        get_bit(value_1, 95) == 0) {
+
+    // Check if the higher bits of value_1 are zero
+    if (get_bit(*value_1, 93) == 0 && get_bit(*value_1, 94) == 0 &&
+        get_bit(*value_1, 95) == 0) {
+      // Multiply value_2 by 10 'difference' times
       for (int i = 0; i < difference; i++) {
         mul_by_ten(value_2);
       }
+      // Set the scale of value_2 to the scale of value_1
       set_scale(value_2, get_scale(value_1));
     } else {
+      // Divide value_1 by 10 'difference' times
       for (int i = 0; i < difference; i++) {
         div_by_ten(value_1);
       }
+      // Set the scale of value_1 to the scale of value_2
       set_scale(value_1, get_scale(value_2));
     }
   }
 }
 
-int is_equal_without_sign(s21_decimal value_1, s21_decimal value_2) {
-  int result;
-  if (value_1.bits[2] != value_2.bits[2]) {
-    result = FALSE;
-  } else if (value_1.bits[1] != value_2.bits[1]) {
-    result = FALSE;
-  } else if (value_1.bits[0] != value_2.bits[0]) {
-    result = FALSE;
+int result_sign(s21_decimal value_1, s21_decimal value_2) {
+  int sign_1 = get_sign(value_1);
+  int sign_2 = get_sign(value_2);
+  int sign;
+  if (sign_1 == sign_2) {
+    sign = 0;
   } else {
-    result = TRUE;
+    sign = 1;
   }
-  return result;
-}
-
-int less_without_mod(const s21_decimal *value_1, const s21_decimal *value_2) {
-  // Compare two s21_decimal values without using the modulus operation
-  int i;
-
-  for (i = 2; i >= 0; i--) {
-    if (value_1->bits[i] < value_2->bits[i]) {
-      return TRUE;
-    } else if (value_1->bits[i] > value_2->bits[i]) {
-      return FALSE;
-    }
-  }
-
-  return FALSE;
+  return sign;
 }

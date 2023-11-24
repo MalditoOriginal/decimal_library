@@ -1,3 +1,5 @@
+#include <check.h>
+
 #include "s21_decimal.h"
 
 START_TEST(s21_from_float_to_decimal_1) {
@@ -10,7 +12,6 @@ START_TEST(s21_from_float_to_decimal_1) {
 }
 END_TEST
 
-/*
 START_TEST(s21_from_float_to_decimal_2) {
   float src = 1.23456789999;
   float temp = 0;
@@ -52,7 +53,6 @@ START_TEST(s21_from_float_to_decimal_4) {
   ck_assert_int_eq(return_value, 1);
 }
 END_TEST
-*/
 
 int main(void) {
   Suite *s;
@@ -63,8 +63,9 @@ int main(void) {
   tc = tcase_create("convertation");
 
   tcase_add_test(tc, s21_from_float_to_decimal_1);
-  // tcase_add_test(tc, s21_from_float_to_decimal_2);
-  // tcase_add_test(tc, s21_from_float_to_decimal_3);
+  tcase_add_test(tc, s21_from_float_to_decimal_2);
+  tcase_add_test(tc, s21_from_float_to_decimal_3);
+  tcase_add_test(tc, s21_from_float_to_decimal_4);
 
   suite_add_tcase(s, tc);
   sr = srunner_create(s);

@@ -1,82 +1,71 @@
 #include "s21_decimal.h"
 
 int s21_from_int_to_decimal(int src, s21_decimal *dst) {
-  if (dst == NULL) {
-    return CONV_ERR;
-  }
-
-  if (isinf(src) || isnan(src)) {
-    return CONV_ERR;
-  }
-
   clear_bits(dst);
-
-  if (src < 0) {
-    set_sign(dst, 1);
-    src *= -1;  // Make src positive
+  int res = OK;
+  if (dst == NULL || isinf((float)src) || isnan((float)src)) {
+    res = 1;
+  } else {
+    if (src < 0) {
+      src *= -1;
+      set_sign(dst, 1);
+    }
+    dst->bits[0] = src;
   }
-
-  dst->bits[0] = src;
-
-  return OK;
+  return res;
 }
 
 int s21_from_decimal_to_int(s21_decimal src, int *dst) {
-  if (dst == NULL) {
-    return CONV_ERR;
-  }
-
-  int result = OK;
+  int out = OK;
   int sign = get_sign(src);
-
-  if (src.bits[2] != 0 || src.bits[1] != 0 || sign) {
-    result = CONV_ERR;
+  int s = get_bit(src, 31);
+  if (src.bits[2] != 0 || src.bits[1] != 0 || s == 1 || dst == NULL) {
+    out = 1;
   } else {
+    *dst = 0;
+    for (int i = get_scale(&src); i > 0; i--) {
+      div_by_ten(&src);
+    }
     *dst = src.bits[0];
     if (sign == 1) {
       *dst *= -1;
     }
   }
-
-  return result;
+  return out;
 }
 
 int s21_from_decimal_to_float(s21_decimal src, float *dst) {
-  int result = OK;
+  int out = 0;
   int scale = get_scale(&src);
-
   if (dst == NULL || scale > 28) {
-    result = CONV_ERR;
+    out = 1;
   } else {
     *dst = 0.0;
-    double temp = *dst;
+    double tmp = *dst;
     for (int i = 0; i < 96; i++) {
-      if (get_bit(&src, i)) {
-        temp += pow(2, i - 32);  // Fixed the exponent calculation
+      if (get_bit(src, i)) {
+        tmp += pow(2, i);
       }
     }
     while (scale > 0) {
-      temp /= 10;
+      tmp /= 10;
       scale--;
     }
-    *dst = (float)temp;  // Cast temp back to float
+    *dst = tmp;
     if (get_sign(src)) {
       *dst *= -1;
     }
   }
-  return result;
+  return out;
 }
 
 int s21_from_float_to_decimal(float src, s21_decimal *dst) {
   clear_bits(dst);
   int result = 0;
-  if (isinf(src) == 1 || isnan(src) == 1 || dst == NULL) {
+  if (isinf((float)src) == 1 || isnan((float)src) == 1 || dst == NULL) {
     result = 1;
   } else {
-    int sign = 0;
-    if (src < 0) {
-      sign = 1;
-    }
+    int sign = get_float_sign(src);
     int float_exp = get_float_exp(&src);
     float tmp = fabs(src);
     int powten = 0;
@@ -86,15 +75,16 @@ int s21_from_float_to_decimal(float src, s21_decimal *dst) {
     }
     tmp = round(tmp);
     if (powten <= 28 && (float_exp > -94 && float_exp < 96)) {
+      UnFloatUnion mantissa;
       while (fmod(tmp, 10) == 0 && powten > 0) {
         powten--;
         tmp /= 10;
       }
-      unsigned int uns_int = 0;
-      float_exp = get_float_exp(&tmp);
+      mantissa.float_pt = tmp;
+      float_exp = get_float_exp(&mantissa.float_pt);
       dst->bits[float_exp / 32] |= 1 << float_exp % 32;
       for (int i = float_exp - 1, j = 22; j >= 0; i--, j--) {
-        if ((uns_int & (1 << j)) != 0) {
+        if ((mantissa.unsign_int & (1 << j)) != 0) {
           dst->bits[i / 32] |= 1 << i % 32;
         }
       }
